@@ -80,3 +80,9 @@ if __name__ == "__main__":
 
     send_mail(subject="Row Count Difference", text={'current_file_count': current_file_count, 'diff_count_value': diff_count_value}, html_body=html_body)
     print("Email sent successfully.")
+
+
+
+++++
+
+html_body = """<html><body><h2>Row Count Difference</h2><table border="1" style="border-collapse: collapse;"><tr><td>File Present Check</td><td>Pass</td></tr><tr><td>File Empty Check</td><td>Pass</td></tr><tr><td>Duplicate Rows Check</td><td>Pass</td></tr><tr><td>Previous file Count</td><td>Pass</td></tr><tr><td>Current File Count</td><td>{current_file_count}</td></tr><tr><td>Row Count Difference</td><td>{diff_count_value}</td></tr></table><p>Please find attached the current vs previous file difference report.</p><p>Regards,<br/>Darshan</p></body></html>""".format(current_file_count=current_file_count, diff_count_value=diff_count_value)
