@@ -86,3 +86,30 @@ if __name__ == "__main__":
 ++++
 
 html_body = """<html><body><h2>Row Count Difference</h2><table border="1" style="border-collapse: collapse;"><tr><td>File Present Check</td><td>Pass</td></tr><tr><td>File Empty Check</td><td>Pass</td></tr><tr><td>Duplicate Rows Check</td><td>Pass</td></tr><tr><td>Previous file Count</td><td>Pass</td></tr><tr><td>Current File Count</td><td>{current_file_count}</td></tr><tr><td>Row Count Difference</td><td>{diff_count_value}</td></tr></table><p>Please find attached the current vs previous file difference report.</p><p>Regards,<br/>Darshan</p></body></html>""".format(current_file_count=current_file_count, diff_count_value=diff_count_value)
+
+
++++++
+
+def send_mail(subject, text, html_body, to_address=MAIL_TO, from_address=MAIL_FROM, smtp_server=MAIL_SMTP_SERVER, format=MAIL_FORMAT, attachment=None, RaiseError=False):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = from_address
+        msg['To'] = to_address
+        msg['Subject'] = subject
+
+        msg.attach(MIMEText(html_body, 'html'))
+
+        if attachment:
+            part = MIMEBase('application', "octet-stream")
+            part.set_payload(attachment)
+            encoders.encode_base64(part)
+            part.add_header('Content-Disposition', 'attachment', filename="difference.txt")
+            msg.attach(part)
+
+        with smtplib.SMTP(smtp_server) as server:
+            server.sendmail(from_address, to_address, msg.as_string())
+            server.quit()
+    except Exception as E:
+        logging.warning("Can't send status email. Check SMTP settings: " + str(E).replace('\n', ''))
+        if RaiseError:
+            raise E
