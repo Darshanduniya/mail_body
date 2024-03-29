@@ -1,0 +1,47 @@
+import os
+
+def send_mail(subject, text, to_address='darshan@infi.com', from_address='airflow@infi.com', smtp_server='smtpna.infi.com', format='plain', attachment=None, RaiseError=False):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = from_address
+        msg['To'] = to_address
+        msg['Subject'] = subject
+
+        if attachment:
+            part = MIMEBase('application', "octet-stream")
+            part.set_payload(attachment)
+            encoders.encode_base64(part)
+            part.add_header('Content-Disposition', 'attachment', filename="difference.txt")
+            msg.attach(part)
+
+        msg.attach(MIMEText(text, format))
+        text = msg.as_string()
+
+        with smtplib.SMTP(smtp_server) as server:
+            server.sendmail(from_address, to_address, text)
+            server.quit()
+    except Exception as E:
+        logging.warning("Can't send status email. Check smtp settings: " + str(E).replace('\n', ''))
+        if RaiseError:
+            raise E
+
+
+def sigle_file_validation(path):
+    if os.path.isfile(path):
+        print("Validation 1: File present at respective path")
+        
+        with open(path, 'r') as file:
+            content = file.read()
+            if not content.strip():
+                print("Empty data")
+                send_mail(subject="File Validation Status",
+                          text="Field\t\tStatus\nFile Present Check\tPass\nFile Empty Check\tFail")
+    else:
+        print("File is not there")
+        send_mail(subject="File Validation Status",
+                  text="Field\t\tStatus\nFile Present Check\tFail")
+
+# Example usage:
+if __name__ == "__main__":
+    file_path = '/data/darshan/text.txt'
+    sigle_file_validation(file_path)
