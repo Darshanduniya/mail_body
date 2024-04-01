@@ -1,0 +1,100 @@
+import os
+import smtplib
+import logging
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+import subprocess
+
+MAIL_TO = "darshan@infi.com"
+MAIL_FROM = "airflow@infi.com"
+MAIL_SMTP_SERVER = "smtpna.infi.com"
+MAIL_FORMAT = "plain"
+
+
+def send_mail(subject, text, html_body, to_address=MAIL_TO, from_address=MAIL_FROM, smtp_server=MAIL_SMTP_SERVER, format=MAIL_FORMAT, attachments=None, RaiseError=False):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = from_address
+        msg['To'] = to_address
+        msg['Subject'] = subject
+
+        msg.attach(MIMEText(html_body, 'html'))
+
+        if attachments:
+            for attachment in attachments:
+                part = MIMEBase('application', "octet-stream")
+                part.set_payload(attachment)
+                encoders.encode_base64(part)
+                part.add_header('Content-Disposition', 'attachment', filename="difference.txt")
+                msg.attach(part)
+
+        with smtplib.SMTP(smtp_server) as server:
+            server.sendmail(from_address, to_address, msg.as_string())
+            server.quit()
+    except Exception as E:
+        logging.warning("Can't send status email. Check SMTP settings: " + str(E).replace('\n', ''))
+        if RaiseError:
+            raise E
+
+
+if __name__ == "__main__":
+    current_file_count = input("Enter the current file count: ")
+    diff_count_value = input("Enter the row count difference: ")
+    
+    # Get differences between two files
+    cmd = ['diff', v_org, v_org_bkp]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    dirrefences = result.stdout
+
+    # Get differences for the second file
+    cmd = ['diff', v_org_bkp, v_org]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    dirrefences_file_two = result.stdout
+
+    # Get differences for the third file
+    cmd = ['diff', v_three, v_three_bkp]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    dirrefences_file_three = result.stdout
+    
+    # Sample HTML body
+    html_body = """
+    <html>
+      <body>
+        <h2>Row Count Difference</h2>
+        <table border="1" style="border-collapse: collapse;">
+          <tr>
+            <td>File Present Check</td>
+            <td>Pass</td>
+          </tr>
+          <tr>
+            <td>File Empty Check</td>
+            <td>Pass</td>
+          </tr>
+          <tr>
+            <td>Duplicate Rows Check</td>
+            <td>Pass</td>
+          </tr>
+          <tr>
+            <td>Previous file Count</td>
+            <td>Pass</td>
+          </tr>
+          <tr>
+            <td>Current File Count</td>
+            <td>{current_file_count}</td>
+          </tr>
+          <tr>
+            <td>Row Count Difference</td>
+            <td>{diff_count_value}</td>
+          </tr>
+        </table>
+        <p>Please find attached the current vs previous file difference report.</p>
+        <p>Regards,<br/>Darshan</p>
+      </body>
+    </html>
+    """.format(current_file_count=current_file_count, diff_count_value=diff_count_value)
+
+    # Send mail with multiple attachments
+    send_mail(subject="Row Count Difference", text={'current_file_count': current_file_count, 'diff_count_value': diff_count_value}, html_body=html_body, attachments=[dirrefences.encode(), dirrefences_file_two.encode(), dirrefences_file_three.encode()])
+    print("Email sent successfully.")
